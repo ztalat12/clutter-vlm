@@ -1,0 +1,17 @@
+{
+  "id": "talhaimran27/clutter-vlm-study3-qwen3vl8b",
+  "title": "clutter-vlm study3 qwen3vl8b",
+  "code_file": "study3_qwen3vl8b_kaggle.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "machine_shape": "NvidiaTeslaT4",
+  "keywords": ["gpu"],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

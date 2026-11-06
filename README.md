@@ -23,8 +23,19 @@ The notebook clones this repo at commit `a2a127a` and stops unless the four scri
 
 Kaggle settings: GPU T4 x2, internet on, phone-verified account, secret `HF_TOKEN` that can read the `atml-shapes-vqa` datasets, switched on for the notebook. Kaggle gives secrets only to runs started from its web page (Save Version → Save & Run All). Runs started through the API need `TOKEN_DATASET=<user>/<slug>`: your own private Kaggle dataset holding `hf_token.txt`.
 
-For each model:
+The plan follows Zoya's runner's guide (`docs/original_README.md`, her commit `a8e14b4`). Kaggle runs at most 2 GPU notebooks at once per account.
 
-1. Trial: `kaggle/push.sh <model> trial`. It checks the answers and estimates the full run time.
-2. Full run: `kaggle/push.sh <model> full all` if the trial says it fits in 12 hours. Otherwise run `full 1`, then `full 2` with the part 1 output attached.
-3. Results: `kaggle kernels output <user>/clutter-vlm-study3-<model> -p out`, or the notebook's Output tab: `preds/`, `results/` and `log_<model>_*.txt`.
+| Run | Command | Time |
+|---|---|---|
+| Gemma 4 E4B full run (its trial already passed on `cadcd07`) | `kaggle/push.sh gemma4e4b full all` | about 9 h |
+| Qwen3-VL-8B trial | `kaggle/push.sh qwen3vl8b trial` | about 30 min |
+| Qwen3-VL-8B part A: shapes and hard | `kaggle/push.sh qwen3vl8b full 1` | 6-7 h |
+| Qwen3-VL-8B part B: objects, lines and naming | `kaggle/push.sh qwen3vl8b full 2` | about 4 h |
+
+Part B can run at the same time as part A. If part A's output is attached, part B also runs the analysis over all four datasets. Otherwise the two halves' `preds` files go into one folder afterwards.
+
+After the trial, check the log the way Zoya asks: "Successfully ran", no `Traceback`, `100.0` in every `parsed` column, and the "s per image" speed lines. Send her a screenshot of the end of the log.
+
+Results: `kaggle kernels output <user>/clutter-vlm-study3-<model> -p out`, or the notebook's Output tab: `preds/` (send this folder to Zoya), `results/` and `log_<model>_*.txt`.
+
+If the run stops with "cannot read atml-shapes-vqa/...", the lines above that error say why: the token is not accepted, the account is not in `atml-shapes-vqa`, or the token is fine-grained instead of type Read.

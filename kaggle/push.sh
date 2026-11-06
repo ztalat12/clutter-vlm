@@ -3,10 +3,11 @@
 # usage: kaggle/push.sh MODEL STAGE [PART] [--no-run]
 #   MODEL   qwen3vl8b or gemma4e4b
 #   STAGE   trial (20 images per version) or full
-#   PART    all (default), 1 (shapes + hard) or 2 (objects + lines, nameability, analysis)
+#   PART    all (default); qwen3vl8b: 1 (shapes + hard) then 2 (objects + lines + naming);
+#           gemma4e4b: answers (all four datasets) then naming (the naming step), as in zoya's runner's guide
 #   --no-run only saves the notebook on kaggle without running it
 # examples: kaggle/push.sh qwen3vl8b trial
-#           kaggle/push.sh gemma4e4b full all
+#           kaggle/push.sh gemma4e4b full answers
 # needs the kaggle cli logged in. kaggle gives notebook secrets only to runs started in its web page,
 # so for an api run set TOKEN_DATASET=<user>/<slug>: your own private dataset holding hf_token.txt
 set -euo pipefail
@@ -16,7 +17,7 @@ PART=${3:-all}
 RUN=${4:-}
 case "$MODEL" in qwen3vl8b|gemma4e4b) ;; *) echo "unknown model $MODEL" >&2; exit 1;; esac
 case "$STAGE" in trial|full) ;; *) echo "unknown stage $STAGE" >&2; exit 1;; esac
-case "$PART" in all|1|2) ;; *) echo "unknown part $PART" >&2; exit 1;; esac
+case "$PART" in all|1|2|answers|naming) ;; *) echo "unknown part $PART" >&2; exit 1;; esac
 case "$RUN" in ""|--no-run) ;; *) echo "unknown option $RUN" >&2; exit 1;; esac
 here=$(cd "$(dirname "$0")" && pwd)
 staging=$(mktemp -d)

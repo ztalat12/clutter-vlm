@@ -4,10 +4,13 @@
 #   MODEL   qwen3vl8b or gemma4e4b
 #   STAGE   trial (20 images per version) or full
 #   PART    all (default); qwen3vl8b: 1 (shapes + hard) then 2 (objects + lines + naming);
-#           gemma4e4b: answers (all four datasets) then naming (the naming step), as in zoya's runner's guide
+#           gemma4e4b: answers (all four datasets) then naming (the naming step), as in zoya's runner's guide;
+#           analysis: H1-H8 only, once all parts are done, on cpu (no gpu needed); set INPUT_DATASET to a
+#           private dataset of yours holding the model's preds files of every part
 #   --no-run only saves the notebook on kaggle without running it
 # examples: kaggle/push.sh qwen3vl8b trial
 #           kaggle/push.sh gemma4e4b full answers
+#           INPUT_DATASET=<user>/<slug> kaggle/push.sh qwen3vl8b full analysis --no-run
 # needs the kaggle cli logged in. kaggle gives notebook secrets only to runs started in its web page,
 # so for an api run set TOKEN_DATASET=<user>/<slug>: your own private dataset holding hf_token.txt
 set -euo pipefail
@@ -17,7 +20,7 @@ PART=${3:-all}
 RUN=${4:-}
 case "$MODEL" in qwen3vl8b|gemma4e4b) ;; *) echo "unknown model $MODEL" >&2; exit 1;; esac
 case "$STAGE" in trial|full) ;; *) echo "unknown stage $STAGE" >&2; exit 1;; esac
-case "$PART" in all|1|2|answers|naming) ;; *) echo "unknown part $PART" >&2; exit 1;; esac
+case "$PART" in all|1|2|answers|naming|analysis) ;; *) echo "unknown part $PART" >&2; exit 1;; esac
 case "$RUN" in ""|--no-run) ;; *) echo "unknown option $RUN" >&2; exit 1;; esac
 here=$(cd "$(dirname "$0")" && pwd)
 staging=$(mktemp -d)
@@ -31,21 +34,32 @@ for setting in ('STAGE = "trial"', 'PART = "all"', 'MODEL = "qwen3vl8b"'):
     assert setting in text, f"settings cell has no {setting}"
 text = text.replace('STAGE = "trial"', f'STAGE = "{stage}"').replace('PART = "all"', f'PART = "{part}"')
 cell["source"] = text.replace('MODEL = "qwen3vl8b"', f'MODEL = "{model}"')
+if part == "analysis":
+    notebook["metadata"].setdefault("kaggle", {}).update(accelerator="none", isGpuEnabled=False)
 json.dump(notebook, open(target, "w"), indent=1)
 print(f"notebook set to MODEL={model} STAGE={stage} PART={part}")
 PY
-python3 - "$here/kernel-metadata.json" "$staging/kernel-metadata.json" "$MODEL" "${KAGGLE_USERNAME:-}" "${TOKEN_DATASET:-}" <<'PY'
+python3 - "$here/kernel-metadata.json" "$staging/kernel-metadata.json" "$MODEL" "${KAGGLE_USERNAME:-}" "$PART" "${TOKEN_DATASET:-}" "${INPUT_DATASET:-}" <<'PY'
 import json, sys
-source, target, model, user, dataset = sys.argv[1:]
+source, target, model, user, part, *datasets = sys.argv[1:]
 meta = json.load(open(source))
 owner = user or meta["id"].split("/")[0]
 # one kaggle notebook per model, so their outputs and versions stay apart
 meta["id"] = f"{owner}/clutter-vlm-study3-{model}"
 meta["title"] = f"clutter-vlm study3 {model}"
 meta["code_file"] = "study3_kaggle.ipynb"
-if dataset:
-    meta["dataset_sources"] = [dataset]
+datasets = [d for d in datasets if d]
+if datasets:
+    meta["dataset_sources"] = datasets
+if part == "analysis":
+    # the analysis loads no model, so it runs on cpu and uses none of the weekly gpu quota
+    meta["enable_gpu"] = False
+    meta.pop("machine_shape", None)
 json.dump(meta, open(target, "w"), indent=1)
 print(f"kaggle notebook {meta['id']}")
 PY
-kaggle kernels push -p "$staging" --accelerator NvidiaTeslaT4 $RUN
+if [ "$PART" = analysis ]; then
+    kaggle kernels push -p "$staging" $RUN
+else
+    kaggle kernels push -p "$staging" --accelerator NvidiaTeslaT4 $RUN
+fi

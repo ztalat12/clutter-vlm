@@ -32,10 +32,13 @@ The plan follows Zoya's runner's guide (`docs/original_README.md`, her commit `e
 | Qwen3-VL-8B trial | `kaggle/push.sh qwen3vl8b trial` | about 30 min |
 | Qwen3-VL-8B part A: shapes and hard | `kaggle/push.sh qwen3vl8b full 1` | 4.5-7 h |
 | Qwen3-VL-8B part B: objects, lines and naming | `kaggle/push.sh qwen3vl8b full 2` | 4.3-7 h |
+| H1-H8 analysis, once a model's parts are all done (CPU, no GPU) | `INPUT_DATASET=<user>/<slug> kaggle/push.sh <model> full analysis` | a few minutes |
 
 Gemma runs in two parts because in one go it would take 11-12 hours, too close to Kaggle's 12-hour limit. Its trial already passed on `cadcd07`.
 
 A model's second part can run beside its first. If the first part's output is attached, the second part copies those files in and runs the analysis over everything. Otherwise both parts' `preds` files go into one folder afterwards.
+
+For the analysis, `INPUT_DATASET` is a private Kaggle dataset of yours holding the model's `preds_*`, `nameability_*` and `environment_*` files from every part. The notebook copies them in and runs only `analysis.py`, which still needs the `HF_TOKEN` secret because it reads the dataset metadata from Hugging Face.
 
 After the trial, check the log the way Zoya asks: "Successfully ran", no `Traceback`, `100.0` in every `parsed` column, and the "s per image" speed lines. Send her a screenshot of the end of the log.
 
